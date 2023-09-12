@@ -1,0 +1,264 @@
+(in-package :bm)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; list functions
+(defun list-without-first-and-last (lst)
+  "give back the list without the first and last element"
+  (reverse (rest (reverse (rest lst)))))
+
+   
+(defun swap-first-last (lst)
+  "swap first and last element of a list"
+  (append (last lst) (list-without-first-and-last lst)
+	  (list (first lst))))
+
+(defun list-up-to-index (lst index)
+  "return list up to index"
+  (if (> index (1- (length lst)))
+      (error "index is bigger then length of list")
+      (loop for item in lst
+	    for i from 0 to index
+	    collect item)))
+
+(defun list-from-i-to-j (lst i j)
+  "return the list from index-i to index-j"
+  (loop for item in lst
+	for index from 0 to (length lst)
+	when (and (<= index j) (>= index i))
+	  collect item))
+
+(defun list-without-last (lst)
+  "return list without last element"
+  (loop for item in lst
+	for i from 0 to (- (length lst) 2)
+	collect item))
+
+(defun swap-elements-of-index (lst i j)
+  "swap elements of index-i  and index-j"
+  (loop for item in lst
+	for index from 0 to (length lst)
+	when (= index i)
+	  collect item into first-element
+	when (= index j)
+	  collect item into second-element
+	when (< index i)
+	  collect item into first-list
+	when (and (> index i) (< index j))
+	  collect item into second-list
+	when (> index j)
+	  collect item into last-list
+	finally (return
+		  (append first-list
+			  second-element
+			  second-list
+			  first-element
+			  last-list))))
+
+(defun fill-list-with-elements (&rest elem-num-lst)
+  "fills a list with a specific number of elements '(e 7) '(a 17)"
+  (let* ((result '()))
+    (dolist (lst elem-num-lst)
+      (destructuring-bind (elem num) lst
+	(dotimes (i num)
+	  (push elem result))))
+    (reverse result)))
+
+(defun repeat-lst (rep lst)
+  (loop repeat rep
+	collect lst into new-lst
+	finally (return (flatten new-lst))))
+;(repeat-lst 5 '(1 2 3))
+
+(defun shorten-list-to (lst to-index &optional (repetitions 1))
+  (if (> to-index (1- (length lst)))
+      (error "given index is bigger then lst") 
+      (loop for i downfrom (1- (length lst)) to to-index
+	    collect (repeat-lst repetitions (list-up-to-index lst i))
+	      into new-lst
+	    finally (return (flatten new-lst)))))
+;;(shorten-list-to '(1 2 3 4 5 6 7 8 9 10) 3 2)
+
+(defun lengthen-list-from (lst from-index &optional (repetitions 1))
+  (if (> from-index (1- (length lst)))
+      (error "given index is bigger then lst") 
+      (loop for i from from-index to (1- (length lst))
+	    collect (repeat-lst repetitions (list-up-to-index lst i))
+	      into new-lst
+	    finally (return (flatten new-lst)))))
+;;(lengthen-list-from '(1 2 3 4 5 6 7 8 9 10) 9 4)
+
+
+(defun make-segments (lst size)
+  (cond ((null lst) nil)
+	((< (length lst) size)
+	 (list lst))
+	(t
+	 (loop for i from 0 to (1- size)
+	       for e in lst
+	       collect e into segment
+	       finally
+		  (return (cons segment
+				(make-segments (nthcdr size lst) size)))))))
+;;(make-segments '(1 2 3 4 5 6 7 8 9 10) 6)
+
+
+
+
+
+(defun my-quick-sort (lst)
+  "quick-sort algorithm"
+  (let* ((pivot-index (1- (length lst))))
+	 (cond ((null lst) nil)
+	       ((= pivot-index -1) nil)
+	       (t (loop for item in lst
+			when (< item (nth pivot-index lst))
+			  collect item into left-list
+			when (> item (nth pivot-index lst))
+			  collect item into right-list
+			when (= item (nth pivot-index lst))
+			  collect item into middle-list
+			finally (return (append 
+					 (my-quick-sort left-list)
+					 middle-list
+					 (my-quick-sort right-list))))))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+
+;; bd1: (Acoustic) Bass Drum 1 (MIDI-Note 35, B0)
+;; bd2: (Electric) Bass Drum 2 (MIDI-Note 36, C1)
+;; sst: Side Stick (MIDI-Note 37, Cs1)
+;; sn1: (Acoustic) Snare 1 (MIDI-Note 38, D1)
+;; hcl: Hand Clap (MIDI-Note 39, Ds1)
+;; sn2: (Electric) Snare 2 (MIDI-Note 40, E1)
+;; lft: Low Floor Tom (MIDI-Note 41, F1)
+;; chh: Closed Hi-Hat (MIDI-Note 42, Fs1)
+;; hft: High Floor Tom (MIDI-Note 43, G1)
+;; phh: Pedal Hi-Hat (MIDI-Note 44, Gs1)
+;; lt: Low Tom (MIDI-Note 45, A1)
+;; ohh: Open Hi-Hat (MIDI-Note 46, As1)
+;; lmt: Low-Mid Tom (MIDI-Note 47, B1)
+;; hmt: Hi-Mid Tom (MIDI-Note 48, C2)
+;; cc1: Crash Cymbal 1 (MIDI-Note 49, Cs2)
+;; ht: High Tom (MIDI-Note 50, D2)
+;; rc1: Ride Cymbal 1 (MIDI-Note 51, Ds2)
+;; ccy: Chinese Cymbal (MIDI-Note 52, E2)
+;; rb: Ride Bell (MIDI-Note 53, F2)
+;; tam: Tambourine (MIDI-Note 54, Fs2)
+;; spl: Splash Cymbal (MIDI-Note 55, G2)
+;; cb: Cowbell (MIDI-Note 56, Gs2)
+;; cc2: Crash Cymbal 2 (MIDI-Note 57, A2)
+;; vib: Vibraslap (MIDI-Note 58, As2)
+;; rc2: Ride Cymbal 2 (MIDI-Note 59, B2)
+;; hb: Hi Bongo (MIDI-Note 60, C3)
+;; lb: Low Bongo (MIDI-Note 61, Cs3)
+;; mhc: Mute Hi Conga (MIDI-Note 62, D3)
+;; ohc: Open Hi Conga (MIDI-Note 63, Ds3)
+;; lc: Low Conga (MIDI-Note 64, E3)
+;; htb: High Timbale (MIDI-Note 65, F3)
+;; ltb: Low Timbale (MIDI-Note 66, Fs3)
+;; hag: High Agogo (MIDI-Note 67, G3)
+;; lag: Low Agogo (MIDI-Note 68, Gs3)
+;; cab: Cabasa (MIDI-Note 69, A3)
+;; mar: Maracas (MIDI-Note 70, As3)
+;; sw: Short Whistle (MIDI-Note 71, B3)
+;; lw: Long Whistle (MIDI-Note 72, C4)
+;; sg: Short Guiro (MIDI-Note 73, Cs4)
+;; lg: Long Guiro (MIDI-Note 74, D4)
+;; cl: Claves (MIDI-Note 75, Ds4)
+;; hwb: Hi Wood Block (MIDI-Note 76, E4)
+;; lwb: Low Wood Block (MIDI-Note 77, F4)
+;; mcu: Mute Cuica (MIDI-Note 78, Fs4)
+;; ocu: Open Cuica (MIDI-Note 79, G4)
+;; mt: Mute Triangle (MIDI-Note 80, Gs4)
+;; ot: Open Triangle (MIDI-Note 81, A4)
+
+(defun drum-symbol-to-note (symbol)
+  "translates a drum-sybol to the specific note-value as described by
+the general midi standard 
+https://www.midi.org/specifications-old/item/gm-level-1-sound-set"
+  (let* ((note-value (case symbol
+		       (bd1 'b0)
+		       (bd2 'c1)
+		       (ss 'cs1)
+		       (sn1 'd1)
+		       (hcl 'ds1)
+		       (sn2 'e1)
+		       (lft 'f1)
+		       (chh 'fs1)
+		       (hft 'g1)
+		       (phh 'gs1)
+		       (lt 'a1)
+		       (ohh 'as1)
+		       (lmt 'b1)
+		       (hmt 'c2)
+		       (cc1 'cs2)
+		       (ht 'd2)
+		       (rc1'ds2)
+		       (ccy 'e2)
+		       (rb 'f2)
+		       (tam 'fs2)
+		       (spl 'g2)
+		       (cb 'gs2)
+		       (cc2 'a2)
+		       (vib 'as2)
+		       (rc2 'b2)
+		       (hb 'c3)
+		       (lb 'cs3)
+		       (mhc 'd3)
+		       (ohc 'ds3)
+		       (lc 'e3)
+		       (htb 'f3)
+		       (ltb 'fs3)
+		       (hag 'g3)
+		       (lag 'gs3)
+		       (cab 'a3)
+		       (mar 'as3)
+		       (sw 'b3)
+		       (lw 'c4)
+		       (sg 'cs4)
+		       (lg 'd4)
+		       (cl 'ds4)
+		       (hwb 'e4)
+		       (lwb 'f4)
+		       (mcu 'fs4)
+		       (ocu 'g4)
+		       (mt 'gs4)
+		       (ot 'a4)
+		       (t (error "~S is not a valid drum-symbol."
+				 symbol)))))
+    note-value))
+			
+(defun make-isorthm-events
+    (pitches rthms velocs &key (list-length :1*2) (drum-symbols nil))
+  "erzeugt eine liste von sc-events die aus einer isorhythmischen
+struktur besteht"
+  (let* ((cl-pitches (make-cscl pitches))
+	 (cl-rthms (make-cscl rthms))
+	 (cl-velocs (make-cscl velocs))
+	 (new-length (cond
+		       ((eq list-length :1*2)
+			(* (length pitches) (length rthms)))
+		       ((eq list-length :1*3)
+			(* (length pitches) (length velocs)))
+		       ((eq list-length :2*3)
+			(* (length rthms) (length velocs)))
+		       ((numberp list-length)
+			list-length)))
+	 (events (cond
+		   ((eq drum-symbols nil)
+		    (loop repeat new-length
+		       for p = (get-next cl-pitches)
+		       for r = (get-next cl-rthms)
+		       for v = (get-next cl-velocs)
+			  collect (make-event p r :amplitude v)))
+		   ((eq drum-symbols t)
+		    (loop repeat new-length
+		       for p = (get-next cl-pitches)
+		       for r = (get-next cl-rthms)
+		       for v = (get-next cl-velocs)
+			  collect (make-event (drum-symbol-to-note p)
+					      r :amplitude v))))))
+    (events-update-time events)
+  events))
