@@ -1,9 +1,0 @@
-(in-package :cl)
-
-(defpackage :buttermilk
-  (:use :common-lisp :sc)
-  (:nicknames :bm))
-
-(in-package :buttermilk)
-
-(load "/Users/philippneumann/Documents/Lisp/bm/src/all.lsp")

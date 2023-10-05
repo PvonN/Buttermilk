@@ -1,3 +1,0 @@
-(in-package :bm)
-
-(load "/Users/philippneumann/Documents/lisp/bm/src/utilities.lsp")
