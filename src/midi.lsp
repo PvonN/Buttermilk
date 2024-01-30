@@ -1,126 +1,8 @@
 (in-package :bm)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; list functions
-(defun list-without-first-and-last (lst)
-  "give back the list without the first and last element"
-  (reverse (rest (reverse (rest lst)))))
-
-   
-(defun swap-first-last (lst)
-  "swap first and last element of a list"
-  (append (last lst) (list-without-first-and-last lst)
-	  (list (first lst))))
-
-(defun list-up-to-index (lst index)
-  "return list up to index"
-  (if (> index (1- (length lst)))
-      (error "index is bigger then length of list")
-      (loop for item in lst
-	    for i from 0 to index
-	    collect item)))
-
-(defun list-from-i-to-j (lst i j)
-  "return the list from index-i to index-j"
-  (loop for item in lst
-	for index from 0 to (length lst)
-	when (and (<= index j) (>= index i))
-	  collect item))
-
-(defun list-without-last (lst)
-  "return list without last element"
-  (loop for item in lst
-	for i from 0 to (- (length lst) 2)
-	collect item))
-
-(defun swap-elements-of-index (lst i j)
-  "swap elements of index-i  and index-j"
-  (loop for item in lst
-	for index from 0 to (length lst)
-	when (= index i)
-	  collect item into first-element
-	when (= index j)
-	  collect item into second-element
-	when (< index i)
-	  collect item into first-list
-	when (and (> index i) (< index j))
-	  collect item into second-list
-	when (> index j)
-	  collect item into last-list
-	finally (return
-		  (append first-list
-			  second-element
-			  second-list
-			  first-element
-			  last-list))))
-
-(defun fill-list-with-elements (&rest elem-num-lst)
-  "fills a list with a specific number of elements '(e 7) '(a 17)"
-  (let* ((result '()))
-    (dolist (lst elem-num-lst)
-      (destructuring-bind (elem num) lst
-	(dotimes (i num)
-	  (push elem result))))
-    (reverse result)))
-
-(defun repeat-lst (rep lst)
-  (loop repeat rep
-	collect lst into new-lst
-	finally (return (flatten new-lst))))
-;(repeat-lst 5 '(1 2 3))
-
-(defun shorten-list-to (lst to-index &key (stepsize 1) (repetitions 1))
-  (if (> to-index (1- (length lst)))
-      (error "given index is bigger then lst") 
-      (loop for i downfrom (1- (length lst)) by stepsize to to-index
-	    collect (repeat-lst repetitions (list-up-to-index lst i))
-	      into new-lst
-	    finally (return (flatten new-lst)))))
-;;(shorten-list-to '(1 2 3 4 5 6 7 8 9 10) 3 :by 2 :repetitions 2)
-
-(defun lengthen-list-from (lst from-index &key (stepsize 1) (repetitions 1))
-  (if (> from-index (1- (length lst)))
-      (error "given index is bigger then lst") 
-      (loop for i from from-index by stepsize to (1- (length lst))
-	    collect (repeat-lst repetitions (list-up-to-index lst i))
-	      into new-lst
-	    finally (return (flatten new-lst)))))
-;;(lengthen-list-from '(1 2 3 4 5 6 7 8 9 10) 9 :by 5 :repetitions 4)
-
-
-(defun make-segments (lst size)
-  (cond ((null lst) nil)
-	((< (length lst) size)
-	 (list lst))
-	(t
-	 (loop for i from 0 to (1- size)
-	       for e in lst
-	       collect e into segment
-	       finally
-		  (return (cons segment
-				(make-segments (nthcdr size lst) size)))))))
-;;(make-segments '(1 2 3 4 5 6 7 8 9 10) 6)
-
-(defun my-quick-sort (lst)
-  "quick-sort algorithm"
-  (let* ((pivot-index (1- (length lst))))
-	 (cond ((null lst) nil)
-	       ((= pivot-index -1) nil)
-	       (t (loop for item in lst
-			when (< item (nth pivot-index lst))
-			  collect item into left-list
-			when (> item (nth pivot-index lst))
-			  collect item into right-list
-			when (= item (nth pivot-index lst))
-			  collect item into middle-list
-			finally (return (append 
-					 (my-quick-sort left-list)
-					 middle-list
-					 (my-quick-sort right-list))))))))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;
+;; drum-symbol-to-note
+;; translate a symbol which is related to a instrument of drumset to
+;; its conventianal MIDI-note number
 
 ;; bd1: (Acoustic) Bass Drum 1 (MIDI-Note 35, B0)
 ;; bd2: (Electric) Bass Drum 2 (MIDI-Note 36, C1)
@@ -225,7 +107,15 @@ https://www.midi.org/specifications-old/item/gm-level-1-sound-set"
 		       (t (error "~S is not a valid drum-symbol."
 				 symbol)))))
     note-value))
-			
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; make-isorthm-events
+;; - take three lists, midi-note numbers, durations and velocities, and
+;; create sc-events which represents isorhythms made from these lists;
+;; - the durations must be formated for the sc-package, which means you
+;; have to use symbolic values like 'q q. s et h w.' etc.
+;; - use 'event-list-to-midi-file' from the sc-package to write these
+;; isorhythms as midi-file
+
 (defun make-isorthm-events
     (pitches rthms velocs &key (list-length :1*2) (drum-symbols nil))
   "erzeugt eine liste von sc-events die aus einer isorhythmischen
@@ -258,4 +148,3 @@ struktur besteht"
 					      r :amplitude v))))))
     (events-update-time events)
   events))
-

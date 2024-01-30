@@ -1,7 +1,38 @@
 (in-package :bm)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; list functions
+;;;
+;; seperates a list into two lists and gives it out as a nested list
+;; in this form ((odd-indeces) (even-indeces))
+(defun deinterleave (lst)
+  (loop for i from 1 to (length lst)
+	for e in lst
+	when (oddp i) collect e into lst-1
+	  when (evenp i) collect e into lst-2
+	    finally (return (list lst-1 lst-2))))
+;;(deinterleave '(a b c d e f g)) => ((A C E G) (B D F))
+
+;;; gives back the last value of a list
+(defun last-value (lst)
+  (car (reverse lst)))
+;;; fills a list of size N with value X
+(defun fill-list (size val)
+  (loop repeat size
+	collect val))
+;;; creates random values between two numbers
+(defun between (mini maxi)
+  (+ mini (random (- maxi mini))))
+;; deviate the values of a list by a fixed percentage, while 100 means
+;; the a value of the list could be doubled or divided by 2
+;; (deviate-list '(1 2 3 4 5) 25)
+;; (deviate-list '(1 2 3 4 5) 25) => (1.245879 2.3614287 2.6611075 4.459944 5.2167025)
+(defun deviate-list (lst percent)
+  (let* ((deviation-amount (/ percent 100.0)))
+    (loop for i in lst
+	  collect (* i (between
+			(abs (1- (* deviation-amount 0.5)))
+			(1+ deviation-amount))))))
+
 (defun list-without-first-and-last (lst)
   "give back the list without the first and last element"
   (reverse (rest (reverse (rest lst)))))
@@ -32,6 +63,25 @@
   (loop for item in lst
 	for i from 0 to (- (length lst) 2)
 	collect item))
+
+(defun list-without (lst index)
+  "returns list without the element with given index"
+  (append (list-up-to-index lst (1- index))
+	  (list-from-i-to-j
+	   lst (1+ index) (length lst))))
+
+(defun crop-list (lst leng)
+  "shortens a list to a given length"
+  (let* ((index (1+ (random (length lst)))))
+    (cond
+      ((eq (length lst) leng) lst)    
+      ((eq (nth index lst)
+	   (nth (1+ index) lst))
+       (crop-list (list-without lst index) leng))    
+      ((eq (nth index lst)
+	   (nth (1- index) lst))
+       (crop-list (list-without lst index) leng))
+      (t (crop-list (list-without-last lst) leng)))))
 
 (defun swap-elements-of-index (lst i j)
   "swap elements of index-i  and index-j"
@@ -66,24 +116,28 @@
 (defun repeat-lst (rep lst)
   (loop repeat rep
 	collect lst into new-lst
-	finally (return (flatten new-lst))))
+	finally (return (almost-flatten new-lst))))
 ;(repeat-lst 5 '(1 2 3))
 
-(defun shorten-list-to (lst to-index &key (stepsize 1) (repetitions 1))
+(defun shorten-list-to
+    (lst to-index &key (stepsize 1) (repetitions 1) (max-leng 100))
   (if (> to-index (1- (length lst)))
       (error "given index is bigger then lst") 
       (loop for i downfrom (1- (length lst)) by stepsize to to-index
 	    collect (repeat-lst repetitions (list-up-to-index lst i))
 	      into new-lst
+	    until (>= (length (flatten new-lst)) max-leng)
 	    finally (return (flatten new-lst)))))
 ;;(shorten-list-to '(1 2 3 4 5 6 7 8 9 10) 3 :by 2 :repetitions 2)
 
-(defun lengthen-list-from (lst from-index &key (stepsize 1) (repetitions 1))
+(defun lengthen-list-from
+    (lst from-index &key (stepsize 1) (repetitions 1) (max-leng 100))
   (if (> from-index (1- (length lst)))
       (error "given index is bigger then lst") 
       (loop for i from from-index by stepsize to (1- (length lst))
 	    collect (repeat-lst repetitions (list-up-to-index lst i))
 	      into new-lst
+	    until (>= (length (flatten new-lst)) max-leng)
 	    finally (return (flatten new-lst)))))
 ;;(lengthen-list-from '(1 2 3 4 5 6 7 8 9 10) 9 :by 5 :repetitions 4)
 
@@ -120,141 +174,86 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;
+;; creates a list of values
+;; draws a line between two values by n steps
+;;(draw-line 10 90 270) => (90.0 110.0 130.0 150.0 170.0 190.0 210.0 230.0 250.0 270)
+(defun line (start steps aim)
+  (let* ((distance (abs (- aim start)))
+	 (stepsize (/ distance (1- steps))))
+    (cond ((< start aim)
+	   (loop for i from start to aim by stepsize
+	      collect (float i) into new-lst
+	      until (eq (length new-lst) steps)
+	      finally (return (append (list-without-last new-lst)
+				      (list aim)))))
+	  ((> start aim)
+	   (loop for i from start downto aim by stepsize
+	      collect (float i) into new-lst
+	      until (eq (length new-lst) steps)
+	      finally (return (append (list-without-last new-lst)
+				      (list aim)))))
+	  ((eq start aim)
+	   (repeat start steps)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; linseg is creating linear segments from a val-a by n-steps to val-n
+;; and so on
+;;(linseg '(0 5 1 3 0.5 5 7)) => (0.0 0.25 0.5 0.75 1 1.0 0.75 0.5 0.5 2.125 3.75 5.375 7)
+(defun linseg (segments)
+  (cond ((< (length segments) 3) nil)
+	(t (append (line (first segments)
+			 (second segments)
+			 (third segments))
+		   (linseg (cddr segments))))))
 
-;; bd1: (Acoustic) Bass Drum 1 (MIDI-Note 35, B0)
-;; bd2: (Electric) Bass Drum 2 (MIDI-Note 36, C1)
-;; sst: Side Stick (MIDI-Note 37, Cs1)
-;; sn1: (Acoustic) Snare 1 (MIDI-Note 38, D1)
-;; hcl: Hand Clap (MIDI-Note 39, Ds1)
-;; sn2: (Electric) Snare 2 (MIDI-Note 40, E1)
-;; lft: Low Floor Tom (MIDI-Note 41, F1)
-;; chh: Closed Hi-Hat (MIDI-Note 42, Fs1)
-;; hft: High Floor Tom (MIDI-Note 43, G1)
-;; phh: Pedal Hi-Hat (MIDI-Note 44, Gs1)
-;; lt: Low Tom (MIDI-Note 45, A1)
-;; ohh: Open Hi-Hat (MIDI-Note 46, As1)
-;; lmt: Low-Mid Tom (MIDI-Note 47, B1)
-;; hmt: Hi-Mid Tom (MIDI-Note 48, C2)
-;; cc1: Crash Cymbal 1 (MIDI-Note 49, Cs2)
-;; ht: High Tom (MIDI-Note 50, D2)
-;; rc1: Ride Cymbal 1 (MIDI-Note 51, Ds2)
-;; ccy: Chinese Cymbal (MIDI-Note 52, E2)
-;; rb: Ride Bell (MIDI-Note 53, F2)
-;; tam: Tambourine (MIDI-Note 54, Fs2)
-;; spl: Splash Cymbal (MIDI-Note 55, G2)
-;; cb: Cowbell (MIDI-Note 56, Gs2)
-;; cc2: Crash Cymbal 2 (MIDI-Note 57, A2)
-;; vib: Vibraslap (MIDI-Note 58, As2)
-;; rc2: Ride Cymbal 2 (MIDI-Note 59, B2)
-;; hb: Hi Bongo (MIDI-Note 60, C3)
-;; lb: Low Bongo (MIDI-Note 61, Cs3)
-;; mhc: Mute Hi Conga (MIDI-Note 62, D3)
-;; ohc: Open Hi Conga (MIDI-Note 63, Ds3)
-;; lc: Low Conga (MIDI-Note 64, E3)
-;; htb: High Timbale (MIDI-Note 65, F3)
-;; ltb: Low Timbale (MIDI-Note 66, Fs3)
-;; hag: High Agogo (MIDI-Note 67, G3)
-;; lag: Low Agogo (MIDI-Note 68, Gs3)
-;; cab: Cabasa (MIDI-Note 69, A3)
-;; mar: Maracas (MIDI-Note 70, As3)
-;; sw: Short Whistle (MIDI-Note 71, B3)
-;; lw: Long Whistle (MIDI-Note 72, C4)
-;; sg: Short Guiro (MIDI-Note 73, Cs4)
-;; lg: Long Guiro (MIDI-Note 74, D4)
-;; cl: Claves (MIDI-Note 75, Ds4)
-;; hwb: Hi Wood Block (MIDI-Note 76, E4)
-;; lwb: Low Wood Block (MIDI-Note 77, F4)
-;; mcu: Mute Cuica (MIDI-Note 78, Fs4)
-;; ocu: Open Cuica (MIDI-Note 79, G4)
-;; mt: Mute Triangle (MIDI-Note 80, Gs4)
-;; ot: Open Triangle (MIDI-Note 81, A4)
 
-(defun drum-symbol-to-note (symbol)
-  "translates a drum-sybol to the specific note-value as described by
-the general midi standard 
-https://www.midi.org/specifications-old/item/gm-level-1-sound-set"
-  (let* ((note-value (case symbol
-		       (bd1 'b0)
-		       (bd2 'c1)
-		       (sst 'cs1)
-		       (sn1 'd1)
-		       (hcl 'ds1)
-		       (sn2 'e1)
-		       (lft 'f1)
-		       (chh 'fs1)
-		       (hft 'g1)
-		       (phh 'gs1)
-		       (lt 'a1)
-		       (ohh 'as1)
-		       (lmt 'b1)
-		       (hmt 'c2)
-		       (cc1 'cs2)
-		       (ht 'd2)
-		       (rc1'ds2)
-		       (ccy 'e2)
-		       (rb 'f2)
-		       (tam 'fs2)
-		       (spl 'g2)
-		       (cb 'gs2)
-		       (cc2 'a2)
-		       (vib 'as2)
-		       (rc2 'b2)
-		       (hb 'c3)
-		       (lb 'cs3)
-		       (mhc 'd3)
-		       (ohc 'ds3)
-		       (lc 'e3)
-		       (htb 'f3)
-		       (ltb 'fs3)
-		       (hag 'g3)
-		       (lag 'gs3)
-		       (cab 'a3)
-		       (mar 'as3)
-		       (sw 'b3)
-		       (lw 'c4)
-		       (sg 'cs4)
-		       (lg 'd4)
-		       (cl 'ds4)
-		       (hwb 'e4)
-		       (lwb 'f4)
-		       (mcu 'fs4)
-		       (ocu 'g4)
-		       (mt 'gs4)
-		       (ot 'a4)
-		       (t (error "~S is not a valid drum-symbol."
-				 symbol)))))
-    note-value))
-			
-(defun make-isorthm-events
-    (pitches rthms velocs &key (list-length :1*2) (drum-symbols nil))
-  "erzeugt eine liste von sc-events die aus einer isorhythmischen
-struktur besteht"
-  (let* ((cl-pitches (make-cscl pitches))
-	 (cl-rthms (make-cscl rthms))
-	 (cl-velocs (make-cscl velocs))
-	 (new-length (cond
-		       ((eq list-length :1*2)
-			(* (length pitches) (length rthms)))
-		       ((eq list-length :1*3)
-			(* (length pitches) (length velocs)))
-		       ((eq list-length :2*3)
-			(* (length rthms) (length velocs)))
-		       ((numberp list-length)
-			list-length)))
-	 (events (cond
-		   ((eq drum-symbols nil)
-		    (loop repeat new-length
-		       for p = (get-next cl-pitches)
-		       for r = (get-next cl-rthms)
-		       for v = (get-next cl-velocs)
-			  collect (make-event p r :amplitude v)))
-		   ((eq drum-symbols t)
-		    (loop repeat new-length
-		       for p = (get-next cl-pitches)
-		       for r = (get-next cl-rthms)
-		       for v = (get-next cl-velocs)
-			  collect (make-event (drum-symbol-to-note p)
-					      r :amplitude v))))))
-    (events-update-time events)
-  events))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; csound functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; fillarray creates a file that can be included in a csound programm
+;; which holds an csound array
+(defun fillarray (name lst path)
+  (with-open-file (orc path :direction :output
+			    :if-exists :supersede
+			    :if-does-not-exist :create)
+    (format orc "~a[] fillarray ~{~f~^,~}~%" name lst)))
+
+;(fillarray "iArray" '(1 2 3 2 3 4 3 2 1 2) "~/Desktop/test.txt")
+
+;; create a list which will be read into a table and then copied to a array
+(defun copyf2array (name lst path-file path-data)
+  (with-open-file (orc path-file :direction :output
+			    :if-exists :supersede
+			    :if-does-not-exist :create)
+    (format orc "i~a ftgen 0,0,0,-23,~s~%k~a[] init tableng:i(i~a)~%copyf2array k~a,i~a~%" name path-data name name name
+  name))
+  (with-open-file (orc path-data :direction :output
+			    :if-exists :supersede
+			    :if-does-not-exist :create)
+    (format orc "~{~f~^,~}~%" lst)))
+
+(defun list-to-gen23 (lst path)
+  (with-open-file (orc path :direction :output
+			    :if-exists :supersede
+			    :if-does-not-exist :create)
+    (format orc "~{~f~^,~}~%" lst)))
+
+;; takes a nested list in this form ((dur val) (dur val) (...)) and
+;; creates a textfile to be used inside csound as a repleacement for
+;; the linseg opcode
+(defun seg-op-h (segments)
+  (cond ((null segments) nil)
+	(t (append (car segments)
+		   (linseg-op-h (cdr segments))))))
+(defun linseg-opcode (name start segments path)
+  (with-open-file (orc path :direction :output
+			    :if-exists :supersede
+			    :if-does-not-exist :create)
+    (format orc "~a linseg ~{~f~^,~}~%" name
+	    (append (list start) (seg-op-h segments)))))
+;;(linseg-opcode "aLine" 0 '((10 5) (2 1) (6 9)) "/Users/philippneumann/Desktop/test.csd")list-to-gen23
+(defun expseg-opcode (name start segments path)
+  (with-open-file (orc path :direction :output
+			    :if-exists :supersede
+			    :if-does-not-exist :create)
+    (format orc "~a expseg ~{~f~^,~}~%" name
+	    (append (list start) (seg-op-h segments)))))
