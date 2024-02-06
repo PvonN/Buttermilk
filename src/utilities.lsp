@@ -1,77 +1,137 @@
 (in-package :bm)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; list functions
-;;;
-;; seperates a list into two lists and gives it out as a nested list
-;; in this form ((odd-indeces) (even-indeces))
+;;; list functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; deinterleave
+;;; seperates a list into two lists and gives it out as a nested list
+;;; in this form ((odd-indeces) (even-indeces))
 (defun deinterleave (lst)
   (loop for i from 1 to (length lst)
 	for e in lst
 	when (oddp i) collect e into lst-1
 	  when (evenp i) collect e into lst-2
 	    finally (return (list lst-1 lst-2))))
-;;(deinterleave '(a b c d e f g)) => ((A C E G) (B D F))
-
+#|
+(deinterleave '(a b c d e f g)) 
+=> ((A C E G) (B D F))
+|#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; last-value
 ;;; gives back the last value of a list
 (defun last-value (lst)
   (car (reverse lst)))
+#|
+(last-value '(1 2 3 4 5))
+=> 5
+|#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; fill-list
 ;;; fills a list of size N with value X
 (defun fill-list (size val)
   (loop repeat size
 	collect val))
+#|
+(fill-list 5 'k)
+=> (K K K K K)
+|#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; between
 ;;; creates random values between two numbers
 (defun between (mini maxi)
   (+ mini (random (- maxi mini))))
-;; deviate the values of a list by a fixed percentage, while 100 means
-;; the a value of the list could be doubled or divided by 2
-;; (deviate-list '(1 2 3 4 5) 25)
-;; (deviate-list '(1 2 3 4 5) 25) => (1.245879 2.3614287 2.6611075 4.459944 5.2167025)
+#|
+(between 4 9)
+=> 7
+
+(between 4.0 9.0)
+=> 5.323592
+|#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; deviate-list
+;;; deviate the values of a list by a fixed percentage, while 100 means
+;;; a value of the list could be doubled or divided by 2
 (defun deviate-list (lst percent)
   (let* ((deviation-amount (/ percent 100.0)))
     (loop for i in lst
 	  collect (* i (between
 			(abs (1- (* deviation-amount 0.5)))
 			(1+ deviation-amount))))))
-
+#|
+(deviate-list '(1 2 3 4 5) 25)
+=> (1.245879 2.3614287 2.6611075 4.459944 5.2167025)
+|#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; list-without-first-and-last
+;;; give back the list without the first and last element
 (defun list-without-first-and-last (lst)
-  "give back the list without the first and last element"
   (reverse (rest (reverse (rest lst)))))
-
-   
+#|
+(list-without-first-and-last '(1 2 3 4 5))
+=> (2 3 4)
+|#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; swap-first-last
+;;; swap first and last element of a list
 (defun swap-first-last (lst)
-  "swap first and last element of a list"
   (append (last lst) (list-without-first-and-last lst)
 	  (list (first lst))))
-
+#|
+(swap-first-last '(1 2 3 4 5))
+=> (5 2 3 4 1)
+|#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; list-up-to-index
+;;; return list up to index 
 (defun list-up-to-index (lst index)
-  "return list up to index"
   (if (> index (1- (length lst)))
       (error "index is bigger then length of list")
       (loop for item in lst
 	    for i from 0 to index
 	    collect item)))
-
+#|
+(list-up-to-index '(1 2 3 4 5 6 7 8 9) 4)
+=> (1 2 3 4 5)
+|#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; list-from-i-to-j
+;;; return the list from index-i to index-j
 (defun list-from-i-to-j (lst i j)
-  "return the list from index-i to index-j"
   (loop for item in lst
 	for index from 0 to (length lst)
 	when (and (<= index j) (>= index i))
 	  collect item))
-
+#|
+(list-from-i-to-j '(0 1 2 3 4 5 6 7 8 9 10) 2 6)
+=> (2 3 4 5 6)
+|#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; list-without-last
+;;; return list without last element
 (defun list-without-last (lst)
-  "return list without last element"
   (loop for item in lst
 	for i from 0 to (- (length lst) 2)
 	collect item))
-
+#|
+(list-without-last '(1 2 3 4 5))
+=> (1 2 3 4)
+|#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; list-without
+;;; returns list without the element with given index
 (defun list-without (lst index)
-  "returns list without the element with given index"
   (append (list-up-to-index lst (1- index))
 	  (list-from-i-to-j
 	   lst (1+ index) (length lst))))
-
+#|
+(list-without '(0 1 2 3 4 5 6) 3)
+=> (0 1 2 4 5 6)
+|#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; crop-list
+;;; shortens a list to a given length
 (defun crop-list (lst leng)
-  "shortens a list to a given length"
   (let* ((index (1+ (random (length lst)))))
     (cond
       ((eq (length lst) leng) lst)    
@@ -82,6 +142,10 @@
 	   (nth (1- index) lst))
        (crop-list (list-without lst index) leng))
       (t (crop-list (list-without-last lst) leng)))))
+#|
+(crop-list '(0 1 2 3 4 5 6 7) 3)
+=> (0 1 2)
+|#
 
 (defun swap-elements-of-index (lst i j)
   "swap elements of index-i  and index-j"
@@ -194,66 +258,3 @@
 				      (list aim)))))
 	  ((eq start aim)
 	   (repeat start steps)))))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; linseg is creating linear segments from a val-a by n-steps to val-n
-;; and so on
-;;(linseg '(0 5 1 3 0.5 5 7)) => (0.0 0.25 0.5 0.75 1 1.0 0.75 0.5 0.5 2.125 3.75 5.375 7)
-(defun linseg (segments)
-  (cond ((< (length segments) 3) nil)
-	(t (append (line (first segments)
-			 (second segments)
-			 (third segments))
-		   (linseg (cddr segments))))))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; csound functions
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; fillarray creates a file that can be included in a csound programm
-;; which holds an csound array
-(defun fillarray (name lst path)
-  (with-open-file (orc path :direction :output
-			    :if-exists :supersede
-			    :if-does-not-exist :create)
-    (format orc "~a[] fillarray ~{~f~^,~}~%" name lst)))
-
-;(fillarray "iArray" '(1 2 3 2 3 4 3 2 1 2) "~/Desktop/test.txt")
-
-;; create a list which will be read into a table and then copied to a array
-(defun copyf2array (name lst path-file path-data)
-  (with-open-file (orc path-file :direction :output
-			    :if-exists :supersede
-			    :if-does-not-exist :create)
-    (format orc "i~a ftgen 0,0,0,-23,~s~%k~a[] init tableng:i(i~a)~%copyf2array k~a,i~a~%" name path-data name name name
-  name))
-  (with-open-file (orc path-data :direction :output
-			    :if-exists :supersede
-			    :if-does-not-exist :create)
-    (format orc "~{~f~^,~}~%" lst)))
-
-(defun list-to-gen23 (lst path)
-  (with-open-file (orc path :direction :output
-			    :if-exists :supersede
-			    :if-does-not-exist :create)
-    (format orc "~{~f~^,~}~%" lst)))
-
-;; takes a nested list in this form ((dur val) (dur val) (...)) and
-;; creates a textfile to be used inside csound as a repleacement for
-;; the linseg opcode
-(defun seg-op-h (segments)
-  (cond ((null segments) nil)
-	(t (append (car segments)
-		   (linseg-op-h (cdr segments))))))
-(defun linseg-opcode (name start segments path)
-  (with-open-file (orc path :direction :output
-			    :if-exists :supersede
-			    :if-does-not-exist :create)
-    (format orc "~a linseg ~{~f~^,~}~%" name
-	    (append (list start) (seg-op-h segments)))))
-;;(linseg-opcode "aLine" 0 '((10 5) (2 1) (6 9)) "/Users/philippneumann/Desktop/test.csd")list-to-gen23
-(defun expseg-opcode (name start segments path)
-  (with-open-file (orc path :direction :output
-			    :if-exists :supersede
-			    :if-does-not-exist :create)
-    (format orc "~a expseg ~{~f~^,~}~%" name
-	    (append (list start) (seg-op-h segments)))))
