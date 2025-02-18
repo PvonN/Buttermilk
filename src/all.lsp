@@ -5,3 +5,5 @@
 (load "/Users/philippneumann/lisp/bm/src/max.lsp")
 (load "/Users/philippneumann/lisp/bm/src/math.lsp")
 (load "/Users/philippneumann/lisp/bm/src/midi.lsp")
+(load "/Users/philippneumann/lisp/bm/src/algos.lsp")
+(load "/Users/philippneumann/lisp/bm/src/attractor.lsp")

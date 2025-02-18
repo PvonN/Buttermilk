@@ -1,5 +1,23 @@
 (in-package :bm)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; csound-score
+(defun csound-score (path instruments starts durations &rest p-fields)    
+  (with-open-file (orc path :direction :output
+			    :if-exists :supersede
+			    :if-does-not-exist :create)
+    (if (null p-fields)
+	(loop for instr in instruments
+	      for start in starts
+	      for dur in durations
+	      do (format orc "i~a ~a ~a~%" instr start dur))
+	(progn (setf p-fields (apply #'mapcar #'list p-fields))
+	       (loop for instr in instruments
+		     for start in starts
+		     for dur in durations
+		     for p-field-set in p-fields
+		     do (format orc "i~a ~a ~a~{ ~a~}~%" instr start dur p-field-set))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; make-spectr-arr
 ;;; create a array from the spectrum analysis of a soundfile
 ;;; frequency and amplitude values are interleaved
@@ -67,7 +85,7 @@ kFreqArr[] fillarray 1324.77,1107.70,3966.24,120.99,95.84,147.33,2642.59,50.65,8
 |#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; copyf2array
-;;; create a list which will be read into a table and then copied to a
+;;; takes a list which will be read into a table and then copied to a
 ;;; k-array
 ;;; - uses GEN23
 ;;; - this way of creating a array is nearly unlimited to the amount
@@ -89,6 +107,16 @@ kFreqArr[] fillarray 1324.77,1107.70,3966.24,120.99,95.84,147.33,2642.59,50.65,8
 	     "/Users/philippneumann/Desktop/file-to-csound.csd" 
 	     "/Users/philippneumann/Desktop/datafile.txt")
 |#
+(defun copyf2arrayInt (name lst path-file path-data)
+  (with-open-file (orc path-file :direction :output
+			    :if-exists :supersede
+			    :if-does-not-exist :create)
+    (format orc "i~a ftgen 0,0,0,-23,~s~%k~a[] init tableng:i(i~a)~%copyf2array k~a,i~a~%" name path-data name name name
+  name))
+  (with-open-file (orc path-data :direction :output
+			    :if-exists :supersede
+			    :if-does-not-exist :create)
+    (format orc "~{~s~^,~}~%" lst)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; list-to-gen23
 ;;; creates a .txt file which can be used with GEN23
@@ -136,3 +164,19 @@ kFreqArr[] fillarray 1324.77,1107.70,3966.24,120.99,95.84,147.33,2642.59,50.65,8
 (expseg-opcode "aLine" 0 '((10 5) (2 1) (6 9)) "/Users/philippneumann/Desktop/test.csd")
 |#
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; csound-make-matrix
+;; takes a list and creates a csound matrix via `fillarray`
+(defun csound-make-matrix (name lst num-rows num-col path)
+  (with-open-file (orc path :direction :output
+			    :if-exists :supersede
+			    :if-does-not-exist :create)
+    (format orc "~a[][] init ~a, ~a~%~a fillarray ~{~f~^,~}~%" name
+	    num-rows num-col name
+	    lst)))
+#|
+(csound-make-matrix "kMatrix" '(1 2 3 4 5 6) 2 3 "~/test.csd")
+
+kMatrix[][] init 2, 3
+kMatrix fillarray 1.0,2.0,3.0,4.0,5.0,6.0
+|#
